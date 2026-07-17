@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: resume-analyser
+    runtime: node
+    buildCommand: npm run build:all
+    startCommand: cd backend && npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROK_MODEL
+        value: grok-2
+      - key: GROK_API_KEY
+        sync: false

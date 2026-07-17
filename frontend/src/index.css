@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --animate-scan: scan 3s ease-in-out infinite;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-fade-in: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-up: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+
+  @keyframes scan {
+    0%, 100% { transform: translateY(0%) }
+    50% { transform: translateY(220px) }
+  }
+  @keyframes fadeIn {
+    0% { opacity: 0 }
+    100% { opacity: 1 }
+  }
+  @keyframes slideUp {
+    0% { transform: translateY(30px); opacity: 0 }
+    100% { transform: translateY(0); opacity: 1 }
+  }
+  @keyframes glow {
+    0% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.2), 0 0 10px rgba(99, 102, 241, 0.2) }
+    100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 30px rgba(99, 102, 241, 0.4) }
+  }
+}
+
+:root {
+  --bg-gradient-start: #f8fafc;
+  --bg-gradient-end: #f1f5f9;
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(226, 232, 240, 0.8);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+}
+
+.dark {
+  --bg-gradient-start: #030712;
+  --bg-gradient-end: #0f172a;
+  --card-bg: rgba(15, 23, 42, 0.6);
+  --card-border: rgba(30, 41, 59, 0.7);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+}
+
+body {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Custom Scrollbar for premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Glassmorphism Panel Utilities */
+.glass-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-glow-indigo {
+  box-shadow: 0 8px 32px 0 rgba(99, 102, 241, 0.08);
+}
+
+.glass-glow-emerald {
+  box-shadow: 0 8px 32px 0 rgba(16, 185, 129, 0.08);
+}
+
+/* Scan Laser Animation Line */
+.laser-scanner {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #6366f1, #3b82f6, #6366f1, transparent);
+  box-shadow: 0 0 10px #6366f1, 0 0 20px #3b82f6;
+  opacity: 0.8;
+}
+
+/* Grid overlay background effect */
+.grid-bg {
+  background-size: 30px 30px;
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+}
+
+.dark .grid-bg {
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+}
+
+/* Print CSS Configurations */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Hide interactive elements, themes, and landing elements */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Reset background effects, borders, and shadows for printing */
+  .glass-panel {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    color: #000000 !important;
+  }
+  
+  .print-page-break {
+    page-break-before: always !important;
+    padding-top: 2rem !important;
+  }
+
+  .print-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1.5rem !important;
+  }
+  
+  .print-text-dark {
+    color: #0f172a !important;
+  }
+  
+  .print-full-width {
+    grid-column: span 2 / span 2 !important;
+  }
+}
