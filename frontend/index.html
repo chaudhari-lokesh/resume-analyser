@@ -1,27 +1,55 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%22100%22 height=%22100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%236366f1%22/><text y=%2270%22 x=%2222%22 fill=%22white%22 font-family=%22sans-serif%22 font-size=%2255%22 font-weight=%22bold%22>R</text></svg>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- SEO Optimization -->
-    <title>ResuMind AI | Advanced AI Resume Analyzer & ATS Optimizer</title>
-    <meta name="description" content="Optimize your resume for applicant tracking systems (ATS). Upload your resume to extract, analyze, and grade your career profile using advanced AI. Get instant professional feedback." />
-    <meta name="keywords" content="ATS resume reviewer, resume analyzer, AI career coach, resume optimizer, ATS scanner, interview preparation, resume score" />
+    <!-- Inline theme script to prevent flash of unstyled theme -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (saved === 'dark' || (!saved && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- Primary Meta Tags -->
+    <title>ResuMind AI — ATS Resume Analyzer & Career Optimizer</title>
+    <meta name="title" content="ResuMind AI — ATS Resume Analyzer & Career Optimizer" />
+    <meta name="description" content="Production-grade ATS resume analyzer. Upload your resume for keyword scoring, grammar review, role matching, and interview preparation with zero data retention." />
+    <meta name="keywords" content="ATS resume analyzer, resume score, ATS optimizer, career coach, resume scanner, interview questions, privacy-focused resume review" />
     <meta name="author" content="ResuMind AI" />
-    
-    <!-- Open Graph for Social Sharing -->
-    <meta property="og:title" content="ResuMind AI | Advanced AI Resume Analyzer" />
-    <meta property="og:description" content="Analyze and score your resume instantly using AI. Get weaknesses, recommended projects, certifications, and mock interview questions." />
+    <meta name="theme-color" content="#18181b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    
-    <!-- Google Fonts Connection -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta property="og:title" content="ResuMind AI — ATS Resume Analyzer & Career Optimizer" />
+    <meta property="og:description" content="Production-grade ATS resume analyzer. Instant parsing, role matching, and actionable career advice with zero data retention." />
+    <meta property="og:image" content="/icons.svg" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="ResuMind AI — ATS Resume Analyzer & Career Optimizer" />
+    <meta property="twitter:description" content="Production-grade ATS resume analyzer. Instant parsing, role matching, and actionable career advice with zero data retention." />
+    <meta property="twitter:image" content="/icons.svg" />
+
+    <!-- Icons & Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Typography: Inter font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 grid-bg min-h-screen">
+  <body class="bg-surface-bg text-text-main font-sans antialiased min-h-screen transition-colors duration-150">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ResuMind AI - Concept Note</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            color: #1f2937;
+            background-color: #ffffff;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+        .page {
+            width: 210mm;
+            height: 297mm;
+            page-break-after: always;
+            position: relative;
+            padding: 20mm 20mm 25mm 20mm;
+            background-color: #ffffff;
+        }
+        
+        /* Header styling */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0d9488;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .header-logo-left {
+            height: 38px;
+            object-fit: contain;
+        }
+        .header-logo-right {
+            height: 26px;
+            object-fit: contain;
+        }
+        
+        /* Footer styling */
+        .footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            color: #111827;
+            padding-top: 8px;
+        }
+
+        /* Titles and headings */
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            color: #111827;
+            margin-top: 0;
+        }
+        .report-title-container {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .report-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0d9488;
+            letter-spacing: -0.02em;
+            margin-bottom: 10px;
+        }
+        .report-subtitle {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+        .report-program {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .section-divider {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 20px 0;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0d9488;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+        .subsection-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 18px;
+            margin-bottom: 8px;
+        }
+        
+        /* Page 1 Specifics */
+        .p1-header {
+            border-bottom: 2px solid #2563eb;
+        }
+        .p1-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #1e3a8a;
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 8px;
+        }
+        .p1-subtitle {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .p1-section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e3a8a;
+            text-align: center;
+            margin-top: 35px;
+            margin-bottom: 20px;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        /* Blue Table (Page 1) */
+        .blue-table {
+            border: 1px solid #2563eb;
+        }
+        .blue-table td {
+            border: 1px solid #93c5fd;
+            padding: 10px 14px;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        .blue-table td.label-cell {
+            width: 32%;
+            background-color: #dbeafe;
+            color: #1e3a8a;
+            font-weight: 700;
+        }
+        .blue-table td.value-cell {
+            color: #1e293b;
+        }
+        .blue-table ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .blue-table li {
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+        .blue-table li:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Teal Table (Page 2, 3) */
+        .teal-table {
+            border: 1px solid #0d9488;
+        }
+        .teal-table td, .teal-table th {
+            border: 1px solid #0d9488;
+            padding: 10px 14px;
+            font-size: 12.5px;
+            text-align: left;
+        }
+        .teal-table th {
+            background-color: #0d9488;
+            color: #ffffff;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+        }
+        .teal-table td.label-cell {
+            width: 25%;
+            background-color: #ccfbf1;
+            color: #0f766e;
+            font-weight: 700;
+        }
+        .teal-table td.value-cell {
+            color: #1f2937;
+        }
+        
+        /* Bullet Lists */
+        ul {
+            margin-top: 6px;
+            margin-bottom: 12px;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= PAGE 1 ================= -->
+    <div class="page">
+        <div class="header p1-header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="p1-title">Team THE ENGINEER'S</div>
+        <div class="p1-subtitle">AICTE | IBM SkillsBuild Gen AI & Cloud Computing Internship | BharatCares</div>
+        
+        <hr class="section-divider" style="border-top: 1px solid #2563eb; margin-bottom: 30px;">
+        
+        <div class="p1-section-title">Team Details</div>
+        
+        <table class="blue-table">
+            <tr>
+                <td class="label-cell">Unique Team ID</td>
+                <td class="value-cell">IBMBH04026</td>
+            </tr>
+            <tr>
+                <td class="label-cell">College Pincode</td>
+                <td class="value-cell">394601</td>
+            </tr>
+            <tr>
+                <td class="label-cell">College Name</td>
+                <td class="value-cell">S. N. Patel Institute of Technology & Research Centre, Bardoli</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Internship Name</td>
+                <td class="value-cell">AICTE | IBM SkillsBuild Gen AI & Cloud Computing Internship | BharatCares</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Total Team Members</td>
+                <td class="value-cell">06</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Total Female Team Members</td>
+                <td class="value-cell">00</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Team Leader Name</td>
+                <td class="value-cell">Patil Aakash Bhaskar</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Team Leader Email</td>
+                <td class="value-cell">ap4500522@gmail.com</td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="vertical-align: top;">Team members name</td>
+                <td class="value-cell">
+                    <ul>
+                        <li>Patil Gaurav Satish</li>
+                        <li>Patil Jayesh Chandu</li>
+                        <li>Patil Prashant Vinod</li>
+                        <li>Patil Sadanand Himmat</li>
+                        <li>Saroj Suraj Santoshkumar</li>
+                    </ul>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="footer">1</div>
+    </div>
+
+    <!-- ================= PAGE 2 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="report-title-container">
+            <div class="report-title">CONCEPT NOTE</div>
+            <div class="report-program">Bharat Cares & IBM — GenAI Application Development Program</div>
+        </div>
+        
+        <hr class="section-divider">
+        
+        <div class="section-title">1. Project Title & Application Name</div>
+        
+        <table class="teal-table">
+            <tr>
+                <td class="label-cell">Project Title</td>
+                <td class="value-cell">ResuMind AI — Advanced AI Resume Analyzer & ATS Optimizer</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Application Name</td>
+                <td class="value-cell">resume-analyser</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Live URL</td>
+                <td class="value-cell"><a href="https://resume-analyser.onrender.com" target="_blank">https://resume-analyser.onrender.com</a></td>
+            </tr>
+        </table>
+        
+        <div class="section-title">2. Problem Statement / Objective</div>
+        <p>
+            Today, many job seekers and students struggle to pass the initial automated screenings conducted by Applicant Tracking Systems (ATS). Free resume tools frequently fail to offer comprehensive grading, structured career suggestions (such as project ideas or certifications), or contextual mock interview questions. Additionally, many users are concerned about data privacy when uploading personal details to third-party servers.
+        </p>
+        <p>
+            <strong>ResuMind AI</strong> solves this problem by offering a modern, privacy-first, database-free resume analysis platform. Resumes uploaded as PDF or DOCX files are parsed directly into text in-memory and analyzed transiently via LLM APIs. The system outputs comprehensive grading scores, key strengths, weaknesses, missing keywords, best job roles, optimized summary variations, and interactive mock interview questions, with zero data retention.
+        </p>
+        
+        <div class="section-title">3. Target User & Use Case</div>
+        <ul>
+            <li><strong>Primary user:</strong> An individual job seeker, student, or professional seeking an interactive, privacy-respecting ATS grading assistant with summary optimization and custom mock interview practice.</li>
+            <li><strong>Secondary user:</strong> A career counselor or university recruitment coordinator who wants to quickly review applicant resumes without storing candidate details or raising privacy compliance issues.</li>
+            <li><strong>Core use case:</strong> Upload resume (PDF/DOCX) &rarr; Extract text in memory &rarr; Transient LLM analysis &rarr; Render live visual dashboard with gauges, strengths, keyword gap alerts, improved summary comparisons, and accordion-style mock interview practice &rarr; Save/print report vector PDF.</li>
+        </ul>
+        
+        <div class="footer">2</div>
+    </div>
+
+    <!-- ================= PAGE 3 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="section-title">4. LLM Model & API Used</div>
+        
+        <table class="teal-table">
+            <tr>
+                <td class="label-cell">Provider</td>
+                <td class="value-cell">Google Gemini API (with fallbacks for OpenAI, Claude, Grok, and OpenRouter)</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Models</td>
+                <td class="value-cell"><code>gemini-3.5-flash</code> — default, high-speed, cost-effective responses<br><code>gemini-3.5-pro</code> — selectable for deep structural career evaluations</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Configurable parameters</td>
+                <td class="value-cell">API key authentication, active provider toggles, and model selections managed through backend environment configurations.</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Auxiliary use of LLM</td>
+                <td class="value-cell">Sanitizes raw output streams, extracts structural JSON matching strict schemas, and generates contextual STAR-based interview questions.</td>
+            </tr>
+        </table>
+        
+        <div class="section-title">5. Key Features of the Application</div>
+        <ul>
+            <li><strong>Secure Document Parsing:</strong> PDF.js and Mammoth.js process files entirely in Express memory buffers, extracting content without persistent file writing.</li>
+            <li><strong>In-Memory Transient Processing:</strong> Zero database footprints or file tracking. Uploads are analyzed immediately and data is returned directly to the client browser.</li>
+            <li><strong>ATS Scoring Gauges:</strong> Visual progress metrics representing Overall Score, ATS Compatibility, Grammar & Style, and Skills Match.</li>
+            <li><strong>Career Analytics Panels:</strong> Highlights quantified strengths, improvement points, missing industry skills, and target job titles.</li>
+            <li><strong>Interactive Mock Interview Accordion:</strong> Generates tailored interview questions based on candidate experience, offering structured STAR coaching tips.</li>
+            <li><strong>Professional Summary Optimizer:</strong> Compares original and improved summaries side-by-side with copy-to-clipboard functionality.</li>
+        </ul>
+        
+        <div class="section-title">6. Expected User Experience & Outcomes</div>
+        <ul>
+            <li><strong>Intuitive Dashboard:</strong> Users receive immediate, transparent feedback on their resumes in a clean glassmorphic dashboard (supporting dark/light theme).</li>
+            <li><strong>Empowered Job Application:</strong> Concrete recommendations on missing keywords, certifications, and projects help candidates bypass automated ATS bots.</li>
+            <li><strong>Effective Interview Prep:</strong> Candidates can review and practice custom interview prompts with Star-method tips, preparing them for hiring discussions.</li>
+        </ul>
+        
+        <div class="footer">3</div>
+    </div>
+
+    <!-- ================= PAGE 4 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="section-title">7. Live Application</div>
+        <p>The application is deployed on Render and is publicly accessible at:</p>
+        
+        <p style="margin-top: 25px; font-size: 15px; font-weight: 600;">
+            Live Application: <br>
+            <a href="https://resume-analyser.onrender.com" target="_blank" style="color: #0d9488; text-decoration: underline;">https://resume-analyser.onrender.com</a>
+        </p>
+        
+        <div class="footer">4</div>
+    </div>
+
+</body>
+</html>

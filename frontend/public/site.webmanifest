@@ -1,0 +1,16 @@
+{
+  "name": "ResuMind AI",
+  "short_name": "ResuMind",
+  "description": "ATS Resume Analyzer & Career Optimizer",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#18181b",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

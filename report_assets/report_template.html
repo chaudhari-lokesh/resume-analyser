@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ResuMind AI - Project Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            color: #1f2937;
+            background-color: #ffffff;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+        .page {
+            width: 210mm;
+            height: 297mm;
+            page-break-after: always;
+            position: relative;
+            padding: 20mm 20mm 25mm 20mm;
+            background-color: #ffffff;
+        }
+        
+        /* Header styling */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0d9488;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .header-logo-left {
+            height: 38px;
+            object-fit: contain;
+        }
+        .header-logo-right {
+            height: 26px;
+            object-fit: contain;
+        }
+        
+        /* Footer styling */
+        .footer {
+            position: absolute;
+            bottom: 15mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            color: #111827;
+            padding-top: 8px;
+        }
+
+        /* Titles and headings */
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            color: #111827;
+            margin-top: 0;
+        }
+        .report-title-container {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .report-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #0d9488;
+            letter-spacing: -0.02em;
+            margin-bottom: 10px;
+        }
+        .report-subtitle {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+        .report-program {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .section-divider {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 20px 0;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0d9488;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 6px;
+        }
+        .subsection-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-top: 18px;
+            margin-bottom: 8px;
+        }
+        
+        /* Page 1 Specifics */
+        .p1-header {
+            border-bottom: 2px solid #2563eb;
+        }
+        .p1-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #1e3a8a;
+            text-align: center;
+            margin-top: 30px;
+            margin-bottom: 8px;
+        }
+        .p1-subtitle {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2563eb;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .p1-section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e3a8a;
+            text-align: center;
+            margin-top: 35px;
+            margin-bottom: 20px;
+        }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        /* Blue Table (Page 1) */
+        .blue-table {
+            border: 1px solid #2563eb;
+        }
+        .blue-table td {
+            border: 1px solid #93c5fd;
+            padding: 10px 14px;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        .blue-table td.label-cell {
+            width: 32%;
+            background-color: #dbeafe;
+            color: #1e3a8a;
+            font-weight: 700;
+        }
+        .blue-table td.value-cell {
+            color: #1e293b;
+        }
+        .blue-table ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .blue-table li {
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+        .blue-table li:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Teal Table (Page 2, 4, 6) */
+        .teal-table {
+            border: 1px solid #0d9488;
+        }
+        .teal-table td, .teal-table th {
+            border: 1px solid #0d9488;
+            padding: 10px 14px;
+            font-size: 12.5px;
+            text-align: left;
+        }
+        .teal-table th {
+            background-color: #0d9488;
+            color: #ffffff;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+        }
+        .teal-table td.label-cell {
+            width: 25%;
+            background-color: #ccfbf1;
+            color: #0f766e;
+            font-weight: 700;
+        }
+        .teal-table td.value-cell {
+            color: #1f2937;
+        }
+        
+        /* Bullet Lists */
+        ul {
+            margin-top: 6px;
+            margin-bottom: 12px;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 6px;
+            line-height: 1.5;
+        }
+        
+        /* Code boxes */
+        .code-box {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 11.5px;
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin: 12px 0;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            border: 1px solid #1e293b;
+        }
+        
+        .italic-note {
+            font-style: italic;
+            color: #475569;
+            margin-top: 15px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        /* Screenshot layouts */
+        .screenshot-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .screenshot-wrapper {
+            width: 100%;
+            border: 4px solid #1e293b;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background-color: #090d16;
+        }
+        .screenshot-img {
+            width: 100%;
+            display: block;
+            object-fit: contain;
+        }
+        .screenshot-caption {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #111827;
+            margin-top: 6px;
+            margin-bottom: 15px;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= PAGE 1 ================= -->
+    <div class="page">
+        <div class="header p1-header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="p1-title">Team THE ENGINEER'S</div>
+        <div class="p1-subtitle">AICTE | IBM SkillsBuild Gen AI & Cloud Computing Internship | BharatCares</div>
+        
+        <hr class="section-divider" style="border-top: 1px solid #2563eb; margin-bottom: 30px;">
+        
+        <div class="p1-section-title">Team Details</div>
+        
+        <table class="blue-table">
+            <tr>
+                <td class="label-cell">Unique Team ID</td>
+                <td class="value-cell">IBMBH04026</td>
+            </tr>
+            <tr>
+                <td class="label-cell">College Pincode</td>
+                <td class="value-cell">394601</td>
+            </tr>
+            <tr>
+                <td class="label-cell">College Name</td>
+                <td class="value-cell">S. N. Patel Institute of Technology & Research Centre, Bardoli</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Internship Name</td>
+                <td class="value-cell">AICTE | IBM SkillsBuild Gen AI & Cloud Computing Internship | BharatCares</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Total Team Members</td>
+                <td class="value-cell">06</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Total Female Team Members</td>
+                <td class="value-cell">00</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Team Leader Name</td>
+                <td class="value-cell">Patil Aakash Bhaskar</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Team Leader Email</td>
+                <td class="value-cell">ap4500522@gmail.com</td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="vertical-align: top;">Team members name</td>
+                <td class="value-cell">
+                    <ul>
+                        <li>Patil Gaurav Satish</li>
+                        <li>Patil Jayesh Chandu</li>
+                        <li>Patil Prashant Vinod</li>
+                        <li>Patil Sadanand Himmat</li>
+                        <li>Saroj Suraj Santoshkumar</li>
+                    </ul>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="footer">1</div>
+    </div>
+
+    <!-- ================= PAGE 2 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="report-title-container">
+            <div class="report-title">PROJECT REPORT</div>
+            <div class="report-subtitle">ResuMind AI — Advanced AI Resume Analyzer & ATS Optimizer</div>
+            <div class="report-program">Bharat Cares x IBM GenAI Program</div>
+        </div>
+        
+        <hr class="section-divider">
+        
+        <div class="section-title">1. Application Overview & Tech Stack</div>
+        <p>
+            ResuMind AI is a modern, high-performance, and privacy-focused web application designed to grade your resume, evaluate ATS compatibility, identify grammar issues, discover missing keywords, and practice tailored mock interview questions. The application parses resume text directly from uploaded PDF or DOCX files and processes them entirely in-memory with zero permanent storage or database footprint, ensuring maximum data privacy.
+        </p>
+        
+        <div class="subsection-title">1.1 Tech Stack</div>
+        
+        <table class="teal-table">
+            <tr>
+                <td class="label-cell">Backend</td>
+                <td class="value-cell">Node.js, Express, Multer (in-memory file handling using MemoryStorage)</td>
+            </tr>
+            <tr>
+                <td class="label-cell">LLM Integration</td>
+                <td class="value-cell">Native fetch handlers connecting to Google Gemini API (gemini-3.5-flash / gemini-3.5-pro), OpenAI API, Anthropic Claude, OpenRouter, and xAI Grok</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Database</td>
+                <td class="value-cell">None (Privacy-first design; all operations are strictly in-memory and transient)</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Auth & Security</td>
+                <td class="value-cell">Strict file type filtering, size validation (10MB limit), and in-memory parsing to prevent persistent file storage risks</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Config</td>
+                <td class="value-cell">python-dotenv equivalent in Node.js (dotenv) for managing server port, active AI providers, models, and API keys</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Frontend</td>
+                <td class="value-cell">React (v19) SPA, Vite, Tailwind CSS v4, and Lucide Icons (premium dark-mode themed interface)</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Frontend libraries (CDN)</td>
+                <td class="value-cell">Tailwind CSS v4 (native build system), Lucide React (vector iconography), canvas-based inline circular progress elements</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Deployment</td>
+                <td class="value-cell">Render (onrender.com) using render.yaml web service config</td>
+            </tr>
+        </table>
+        
+        <div class="footer">2</div>
+    </div>
+
+    <!-- ================= PAGE 3 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="section-title">2. Prompting Strategy & Frameworks Used</div>
+        <p>
+            The application bypasses heavy orchestration frameworks (like LangChain) to maintain a fast, stateless, and lightweight footprint. It communicates directly with LLM API endpoints using custom-engineered system instructions that enforce structural JSON responses.
+        </p>
+        
+        <div class="subsection-title">2.1 Structured Schema Prompting</div>
+        <p>
+            A single, comprehensive system prompt is supplied during completion calls. It instructs the AI to evaluate the candidate's resume text and return a strict, pre-defined JSON schema containing scoring metrics, strengths, weaknesses, missing keywords, and recommended projects/certifications.
+        </p>
+        
+        <div class="code-box">SYSTEM_PROMPT = `You are an expert ATS (Applicant Tracking System) Resume Reviewer and Career Coach.
+Analyze the uploaded resume text and provide a structured, detailed review.
+You must return ONLY a valid JSON object matching the schema below.
+Do not wrap your output in markdown formatting, your response must be parseable directly.
+
+Expected JSON Schema:
+{
+  "overall_score": &lt;number 0-100&gt;,
+  "ats_score": &lt;number 0-100&gt;,
+  "grammar_score": &lt;number 0-100&gt;,
+  "skills_score": &lt;number 0-100&gt;,
+  "strengths": [&lt;list of strengths (3-5)&gt;],
+  "weaknesses": [&lt;list of areas of improvement (3-5)&gt;],
+  "missing_skills": [&lt;list of critical missing skills&gt;],
+  "recommended_projects": [&lt;list of 2-3 specific project ideas&gt;],
+  "recommended_certifications": [&lt;list of suitable certifications&gt;],
+  "best_job_roles": [&lt;list of 3-5 job titles&gt;],
+  "resume_summary": "&lt;summary of current resume summary&gt;",
+  "improved_summary": "&lt;rewritten professional summary&gt;",
+  "interview_questions": [&lt;list of 3-5 practice questions&gt;],
+  "final_suggestions": [&lt;list of actionable next steps&gt;]
+}`</div>
+
+        <div class="subsection-title">2.2 JSON Response Cleaning</div>
+        <p>
+            A sanitization function in the backend ensures the robustness of the system by cleaning markdown wraps (such as ```json ... ```) or any preamble and trailing text before passing the payload to JSON.parse().
+        </p>
+        
+        <div class="footer">3</div>
+    </div>
+
+    <!-- ================= PAGE 4 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="section-title">3. Phase-by-Phase Development</div>
+        
+        <table class="teal-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Phase</th>
+                    <th style="width: 45%;">Focus</th>
+                    <th style="width: 30%;">Key Artifacts</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Phase 1 — Environment Setup & Document Parsing</strong></td>
+                    <td>Configured Node.js and React workspaces. Set up document parsing libraries (PDF.js and Mammoth.js) to extract raw text from file buffers.</td>
+                    <td>backend/parser.js, package.json, backend/test_imports.js</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 2 — AI Integration Layer</strong></td>
+                    <td>Developed native fetch handlers connecting to Gemini, OpenAI, Claude, OpenRouter, and Grok APIs. Integrated JSON-cleaning and response formatting functions.</td>
+                    <td>backend/ai.js, backend/.env, backend/.env.example</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 3 — Backend API Development</strong></td>
+                    <td>Created Express server routes to handle transient file uploads via Multer memory storage and route text analysis requests to the active AI handler.</td>
+                    <td>backend/index.js</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 4 — Core Frontend UI</strong></td>
+                    <td>Built the React application foundation, including the drag-and-drop file upload area, theme toggles, and responsive layouts.</td>
+                    <td>frontend/src/App.jsx, frontend/src/components/UploadBox.jsx</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 5 — Results Dashboard & Styling</strong></td>
+                    <td>Designed the analytics screens featuring custom SVG circular scores, side-by-side summary comparison, key metrics panel, and interview questions accordion.</td>
+                    <td>frontend/src/components/ResultsDashboard.jsx, CircularScore.jsx</td>
+                </tr>
+                <tr>
+                    <td><strong>Phase 6 — Deployment & Integration</strong></td>
+                    <td>Finalized environment parameters, configured monorepo package scripts, defined Render build pipelines, and published the production app.</td>
+                    <td>render.yaml, package.json</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <p class="italic-note">
+            This sequencing — data parsing first, AI layer second, API third, frontend UI fourth, dashboard layout fifth, and deployment last — reflects an iterative development lifecycle where every layer was fully validated against operational underlying logic, ensuring rapid debugging and robust vertical integration.
+        </p>
+        
+        <div class="footer">4</div>
+    </div>
+
+    <!-- ================= PAGE 5 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="section-title">4. Application Architecture</div>
+        <p>
+            ResuMind AI operates on a clean client-server architecture. The browser-based frontend handles file selection, basic pre-parsing validations, and data visualization. The Express backend handles PDF/DOCX text parsing and interacts with the AI services.
+        </p>
+        
+        <div class="code-box">Browser (React v19 + Tailwind CSS v4)
+   |
+   | HTTP POST /analyze (Multipart Form-Data with PDF/DOCX File)
+   v
+Express Monolith (backend/index.js)
+   |-- parser.js (Reads PDF.js / Mammoth.js in-memory buffers)
+   |-- ai.js (Appends text to SYSTEM_PROMPT, handles API calls)
+   v
+Configured AI Provider (e.g., Google Gemini API)
+   |
+   | (Analyzes Resume Text & Returns Structured JSON Output)
+   v
+Browser (Renders Circular Scores & Analytics Dashboard)</div>
+
+        <div class="subsection-title">4.1 Data & Session Flow</div>
+        <ul>
+            <li><strong>Transient Processing:</strong> Document parsing utilizes <code>multer.memoryStorage()</code>. The buffer is immediately read to text and not committed to any database, preserving user confidentiality.</li>
+            <li><strong>Stateless Operations:</strong> No backend user session databases or trackers are needed. Text analysis is conducted in a single stateless request-response transaction.</li>
+        </ul>
+        
+        <div class="subsection-title">4.2 State Management</div>
+        <p>
+            Analysis data returned from the backend is stored inside the React parent component's local state and passed down to nested dashboard panels. Theme changes (Dark/Light mode) are persisted in the user's browser via <code>localStorage</code>.
+        </p>
+        
+        <div class="footer">5</div>
+    </div>
+
+    <!-- ================= PAGE 6 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="section-title">5. Challenges Encountered & How They Were Resolved</div>
+        
+        <table class="teal-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Challenge</th>
+                    <th style="width: 75%;">Resolution</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>PDF Layout Spacing Issues</strong></td>
+                    <td>Certain PDF structures caused text extraction items to merge words. Resolved by joining items with explicit spacing characters page-by-page inside the <code>parsePDF</code> module.</td>
+                </tr>
+                <tr>
+                    <td><strong>Large Payload AI Timeouts</strong></td>
+                    <td>Resumes with heavy content resulted in response delays. Settled on fast LLM models (specifically <code>gemini-3.5-flash</code>) to achieve completion responses under 3 seconds.</td>
+                </tr>
+                <tr>
+                    <td><strong>JSON Formatting Robustness</strong></td>
+                    <td>Models occasionally wrapped JSON inside markdown blocks. Resolved by writing a regex-based extraction utility in <code>ai.js</code> to slice text between the first '{' and last '}' characters.</td>
+                </tr>
+                <tr>
+                    <td><strong>Vite Mono-Repo Assets</strong></td>
+                    <td>Packaging and deploying frontend builds inside an Express directory structure. Resolved by writing root-level run scripts and static asset middlewares to serve compiled folders.</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="subsection-title">6. Key Learnings & Reflection</div>
+        <ul>
+            <li><strong>Transient Design Advantage:</strong> Processing uploads strictly in memory eliminates security compliance overheads, proving that databases are not always necessary for complex AI interactions.</li>
+            <li><strong>Clean Architecture Flexibility:</strong> Isolating the AI API connectors inside a modular switch handler allows the application to adapt to other models instantly by editing a single configuration file.</li>
+            <li><strong>Tailwind CSS v4 Velocity:</strong> Transitioning to Tailwind CSS v4 reduced build tool complexity and improved load speed, illustrating the value of keeping the dependency graph lightweight.</li>
+        </ul>
+        
+        <div class="footer">6</div>
+    </div>
+
+    <!-- ================= PAGE 7 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="section-title">7. Live Application</div>
+        <p>
+            The ResuMind AI application is deployed and publicly accessible. The interactive layout allows developers and job candidates to instantly analyze resumes.
+        </p>
+        
+        <div class="subsection-title">• UI-Images:</div>
+        
+        <div class="screenshot-container">
+            <div style="width: 100%;">
+                <div class="screenshot-wrapper">
+                    <img class="screenshot-img" src="{{img_hero}}" alt="Landing Page">
+                </div>
+                <div class="screenshot-caption">7.1 Landing page</div>
+            </div>
+            
+            <div style="width: 100%;">
+                <div class="screenshot-wrapper">
+                    <img class="screenshot-img" src="{{img_upload}}" alt="Resume Upload Page">
+                </div>
+                <div class="screenshot-caption">7.2 Resume Upload page</div>
+            </div>
+        </div>
+        
+        <div class="footer">7</div>
+    </div>
+
+    <!-- ================= PAGE 8 ================= -->
+    <div class="page">
+        <div class="header">
+            <img class="header-logo-left" src="{{logo_bharatcares}}" alt="BharatCares Logo">
+            <img class="header-logo-right" src="{{logo_ibm}}" alt="IBM Logo">
+        </div>
+        
+        <div class="screenshot-container" style="margin-top: 10px;">
+            <div style="width: 100%;">
+                <div class="screenshot-wrapper">
+                    <img class="screenshot-img" src="{{img_dashboard}}" alt="Live Grading Dashboard">
+                </div>
+                <div class="screenshot-caption">7.3 Live Grading Dashboard</div>
+            </div>
+            
+            <div style="width: 100%;">
+                <div class="screenshot-wrapper">
+                    <img class="screenshot-img" src="{{img_details}}" alt="Detailed Analytics & Optimizations">
+                </div>
+                <div class="screenshot-caption">7.4 Detailed Analytics & Optimizations</div>
+            </div>
+        </div>
+        
+        <div class="footer">8</div>
+    </div>
+
+</body>
+</html>

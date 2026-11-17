@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 /**
- * Theme toggle switch component for light and dark modes.
+ * Accessible Theme Toggle supporting system preference detection,
+ * localStorage persistence, and manual toggle without visual flashes.
  */
 export default function ThemeToggle() {
   const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
     const saved = localStorage.getItem('theme');
     if (saved) return saved === 'dark';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -24,15 +26,16 @@ export default function ThemeToggle() {
 
   return (
     <button
-      onClick={() => setIsDark(!isDark)}
-      className="p-2.5 rounded-xl border border-slate-200/50 dark:border-slate-800/40 bg-white/70 dark:bg-slate-900/60 backdrop-blur-md shadow-md text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:scale-105 active:scale-95 transition-all duration-200 no-print"
-      aria-label="Toggle Theme"
-      id="theme-toggle"
+      type="button"
+      onClick={() => setIsDark((prev) => !prev)}
+      className="p-2 rounded-lg border border-surface-border bg-surface-card text-text-secondary hover:text-text-primary hover:border-surface-border transition-subtle cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+      aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+      title={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
     >
       {isDark ? (
-        <Sun className="h-5 w-5 animate-pulse-slow" />
+        <Sun className="h-4 w-4" aria-hidden="true" />
       ) : (
-        <Moon className="h-5 w-5" />
+        <Moon className="h-4 w-4" aria-hidden="true" />
       )}
     </button>
   );

@@ -10,7 +10,9 @@
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
     "build:frontend": "cd frontend && npm run build",
-    "build:all": "npm run install:all && npm run build:frontend"
+    "build:all": "npm run install:all && npm run build:frontend",
+    "test": "npm --prefix backend test",
+    "lint": "npm --prefix frontend run lint"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

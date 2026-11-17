@@ -1,3 +1,6 @@
+const { validateAnalysisData } = require('./schema');
+const logger = require('./logger');
+
 const SYSTEM_PROMPT = `You are an expert ATS (Applicant Tracking System) Resume Reviewer and Career Coach.
 Analyze the uploaded resume text and provide a structured, detailed review.
 You must return ONLY a valid JSON object matching the schema below.
@@ -22,297 +25,392 @@ Expected JSON Schema:
 }
 `;
 
+const REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS) || 45000;
+const MAX_NETWORK_RETRIES = 2;
+
 /**
- * Parses and sanitizes JSON response from AI provider completion.
- * Extracts JSON content from markdown block wrappers if present.
- * @param {string} text - Raw model output text
- * @returns {object} - Structured analysis object
+ * Executes fetch with timeout using AbortController and exponential backoff retry for 429 and 5xx errors.
  */
-function cleanJSONResponse(text) {
-  let cleaned = text.trim();
-  
-  const markdownRegex = /```(?:json)?\s*([\s\S]*?)\s*```/;
+async function fetchWithRetry(url, options, retries = MAX_NETWORK_RETRIES) {
+  let attempt = 0;
+  let delay = 1000;
+
+  while (attempt <= retries) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Retry on Rate Limit (429) or transient Server Errors (500, 502, 503, 504)
+      if ((response.status === 429 || (response.status >= 500 && response.status <= 504)) && attempt < retries) {
+        attempt++;
+        logger.warn({
+          msg: `AI provider returned ${response.status}. Retrying in ${delay}ms... (attempt ${attempt}/${retries})`,
+        });
+        await new Promise((res) => setTimeout(res, delay));
+        delay *= 2;
+        continue;
+      }
+
+      return response;
+    } catch (err) {
+      clearTimeout(timeoutId);
+
+      if (err.name === 'AbortError') {
+        const timeoutErr = new Error(`AI provider request timed out after ${REQUEST_TIMEOUT_MS / 1000}s`);
+        timeoutErr.status = 504;
+        timeoutErr.code = 'AI_TIMEOUT';
+        throw timeoutErr;
+      }
+
+      if (attempt < retries) {
+        attempt++;
+        logger.warn({
+          msg: `AI provider network error (${err.message}). Retrying in ${delay}ms... (attempt ${attempt}/${retries})`,
+        });
+        await new Promise((res) => setTimeout(res, delay));
+        delay *= 2;
+        continue;
+      }
+
+      throw err;
+    }
+  }
+}
+
+/**
+ * Extracts, parses, and validates JSON from model raw string output.
+ * @param {string} raw - Raw text string from AI model
+ * @returns {object} - Validated data object conforming to AnalysisResponseSchema
+ */
+function extractAndValidateJSON(raw) {
+  if (!raw || typeof raw !== 'string') {
+    throw new Error('AI provider returned empty response content.');
+  }
+
+  let cleaned = raw.trim();
+
+  // Strip code blocks if present
+  const markdownRegex = /```(?:json)?\s*([\s\S]*?)\s*```/i;
   const match = markdownRegex.exec(cleaned);
   if (match && match[1]) {
     cleaned = match[1].trim();
   }
-  
+
+  // Find outermost JSON object
   const startIdx = cleaned.indexOf('{');
   const endIdx = cleaned.lastIndexOf('}');
-  
+
   if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
     cleaned = cleaned.substring(startIdx, endIdx + 1);
   }
-  
+
+  let parsed;
   try {
-    const parsed = JSON.parse(cleaned);
-    
-    return {
-      overall_score: parsed.overall_score || 0,
-      ats_score: parsed.ats_score || 0,
-      grammar_score: parsed.grammar_score || 0,
-      skills_score: parsed.skills_score || 0,
-      strengths: parsed.strengths || [],
-      weaknesses: parsed.weaknesses || [],
-      missing_skills: parsed.missing_skills || [],
-      recommended_projects: parsed.recommended_projects || [],
-      recommended_certifications: parsed.recommended_certifications || [],
-      best_job_roles: parsed.best_job_roles || [],
-      resume_summary: parsed.resume_summary || "",
-      improved_summary: parsed.improved_summary || "",
-      interview_questions: parsed.interview_questions || [],
-      final_suggestions: parsed.final_suggestions || []
-    };
-  } catch (error) {
-    console.error('Failed to parse AI response as JSON. Raw text was:', text);
-    throw new Error('AI response did not contain valid JSON format: ' + error.message);
+    parsed = JSON.parse(cleaned);
+  } catch (parseError) {
+    throw new Error('AI response is not valid JSON: ' + parseError.message);
   }
+
+  return validateAnalysisData(parsed);
 }
 
 /**
- * Routes query to the configured AI API provider.
- * @param {string} resumeText - Extracted text content of the resume
- * @returns {Promise<object>} - Structured analysis JSON object
+ * Provider: Google Gemini
  */
-async function queryAI(resumeText) {
-  const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
-  
-  switch (provider) {
-    case 'openai':
-      return await queryOpenAI(resumeText);
-    case 'gemini':
-      return await queryGemini(resumeText);
-    case 'claude':
-      return await queryClaude(resumeText);
-    case 'openrouter':
-      return await queryOpenRouter(resumeText);
-    case 'grok':
-      return await queryGrok(resumeText);
-    default:
-      throw new Error(`Unsupported AI provider: ${provider}. Please configure AI_PROVIDER in your backend .env file.`);
+async function queryGemini(resumeText) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
+  if (!apiKey) {
+    const err = new Error('GEMINI_API_KEY is not configured on the server.');
+    err.status = 500;
+    err.code = 'CONFIG_MISSING';
+    throw err;
   }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const response = await fetchWithRetry(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${SYSTEM_PROMPT}\n\nAnalyze this resume text:\n\n${resumeText}` }],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: 0.2,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text().catch(() => '');
+    const err = new Error(`Gemini API returned status ${response.status}: ${errText}`);
+    err.status = response.status === 429 ? 429 : 502;
+    throw err;
+  }
+
+  const data = await response.json();
+  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return extractAndValidateJSON(rawText);
 }
 
 /**
- * Queries OpenAI API.
+ * Provider: OpenAI
  */
 async function queryOpenAI(resumeText) {
   const apiKey = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  
+
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured in environment variables.');
+    const err = new Error('OPENAI_API_KEY is not configured on the server.');
+    err.status = 500;
+    err.code = 'CONFIG_MISSING';
+    throw err;
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: model,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `Analyze the following resume text:\n\n${resumeText}` }
+        { role: 'user', content: `Analyze the following resume text:\n\n${resumeText}` },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3
-    })
+      temperature: 0.2,
+    }),
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`OpenAI API error: ${response.statusText} ${JSON.stringify(errorData)}`);
+    const errData = await response.json().catch(() => ({}));
+    const err = new Error(`OpenAI API returned status ${response.status}: ${JSON.stringify(errData)}`);
+    err.status = response.status === 429 ? 429 : 502;
+    throw err;
   }
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  
-  if (!content) {
-    throw new Error('OpenAI returned an empty response.');
-  }
-
-  return cleanJSONResponse(content);
+  const rawText = data.choices?.[0]?.message?.content;
+  return extractAndValidateJSON(rawText);
 }
 
 /**
- * Queries Google Gemini API.
- */
-async function queryGemini(resumeText) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
-  
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured in environment variables.');
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: SYSTEM_PROMPT + `\n\nAnalyze this resume text:\n\n${resumeText}` }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        temperature: 0.3
-      }
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error: Status ${response.status} - ${errorText}`);
-  }
-
-  const data = await response.json();
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!content) {
-    throw new Error('Gemini returned an empty response.');
-  }
-
-  return cleanJSONResponse(content);
-}
-
-/**
- * Queries Anthropic Claude API.
+ * Provider: Anthropic Claude
  */
 async function queryClaude(resumeText) {
   const apiKey = process.env.CLAUDE_API_KEY;
   const model = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20240620';
-  
+
   if (!apiKey) {
-    throw new Error('CLAUDE_API_KEY is not configured in environment variables.');
+    const err = new Error('CLAUDE_API_KEY is not configured on the server.');
+    err.status = 500;
+    err.code = 'CONFIG_MISSING';
+    throw err;
   }
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
+      'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
       model: model,
       max_tokens: 4000,
       messages: [
-        { role: 'user', content: SYSTEM_PROMPT + `\n\nAnalyze this resume text:\n\n${resumeText}` }
+        {
+          role: 'user',
+          content: `${SYSTEM_PROMPT}\n\nAnalyze this resume text:\n\n${resumeText}`,
+        },
       ],
-      temperature: 0.3
-    })
+      temperature: 0.2,
+    }),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Claude API error: Status ${response.status} - ${errorText}`);
+    const errText = await response.text().catch(() => '');
+    const err = new Error(`Claude API returned status ${response.status}: ${errText}`);
+    err.status = response.status === 429 ? 429 : 502;
+    throw err;
   }
 
   const data = await response.json();
-  const content = data.content?.[0]?.text;
-
-  if (!content) {
-    throw new Error('Claude returned an empty response.');
-  }
-
-  return cleanJSONResponse(content);
+  const rawText = data.content?.[0]?.text;
+  return extractAndValidateJSON(rawText);
 }
 
 /**
- * Queries OpenRouter API.
+ * Provider: OpenRouter
  */
 async function queryOpenRouter(resumeText) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   const model = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash';
 
   if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY is not configured in environment variables.');
+    const err = new Error('OPENROUTER_API_KEY is not configured on the server.');
+    err.status = 500;
+    err.code = 'CONFIG_MISSING';
+    throw err;
   }
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetchWithRetry('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'X-Title': 'AI Resume Analyzer'
+      Authorization: `Bearer ${apiKey}`,
+      'X-Title': 'ResuMind AI',
     },
     body: JSON.stringify({
       model: model,
       messages: [
-        { role: 'user', content: SYSTEM_PROMPT + `\n\nAnalyze this resume text:\n\n${resumeText}` }
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: `Analyze this resume text:\n\n${resumeText}` },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3
-    })
+      temperature: 0.2,
+    }),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenRouter API error: Status ${response.status} - ${errorText}`);
+    const errText = await response.text().catch(() => '');
+    const err = new Error(`OpenRouter API returned status ${response.status}: ${errText}`);
+    err.status = response.status === 429 ? 429 : 502;
+    throw err;
   }
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-
-  if (!content) {
-    throw new Error('OpenRouter returned an empty response.');
-  }
-
-  return cleanJSONResponse(content);
+  const rawText = data.choices?.[0]?.message?.content;
+  return extractAndValidateJSON(rawText);
 }
 
 /**
- * Queries xAI Grok API (Responses API).
+ * Provider: xAI Grok
  */
 async function queryGrok(resumeText) {
   const apiKey = process.env.GROK_API_KEY;
   const model = process.env.GROK_MODEL || 'grok-4.5';
-  
+
   if (!apiKey) {
-    throw new Error('GROK_API_KEY is not configured in environment variables.');
+    const err = new Error('GROK_API_KEY is not configured on the server.');
+    err.status = 500;
+    err.code = 'CONFIG_MISSING';
+    throw err;
   }
 
-  const response = await fetch('https://api.x.ai/v1/responses', {
+  const response = await fetchWithRetry('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model: model,
-      input: [
+      messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: `Analyze the following resume text:\n\n${resumeText}` }
+        { role: 'user', content: `Analyze the following resume text:\n\n${resumeText}` },
       ],
-      temperature: 0.3
-    })
+      temperature: 0.2,
+    }),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Grok API error: Status ${response.status} - ${errorText}`);
+    const errText = await response.text().catch(() => '');
+    const err = new Error(`Grok API returned status ${response.status}: ${errText}`);
+    err.status = response.status === 429 ? 429 : 502;
+    throw err;
   }
 
   const data = await response.json();
-  const content = data.output?.[0]?.content?.[0]?.text;
-  
-  if (!content) {
-    throw new Error('Grok returned an empty response.');
-  }
+  const rawText = data.choices?.[0]?.message?.content;
+  return extractAndValidateJSON(rawText);
+}
 
-  return cleanJSONResponse(content);
+/**
+ * Provider: Local ML Python Backend (Fallback / Local experiment)
+ */
+async function queryML(resumeText) {
+  const { execSync } = require('child_process');
+  const path = require('path');
+  const rootDir = path.resolve(__dirname, '..').replace(/\\/g, '/');
+  const pythonCmd = `python -c "import sys, json; sys.path.append('${rootDir}'); from ml_backend.ml_engine import analyze_resume_ml; text = sys.stdin.read(); print(json.dumps(analyze_resume_ml(text)))"`;
+  const resultJson = execSync(pythonCmd, {
+    input: resumeText,
+    encoding: 'utf-8',
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  return extractAndValidateJSON(resultJson.trim());
+}
+
+/**
+ * Dispatches query to configured provider, with automatic single retry on malformed JSON.
+ * @param {string} resumeText - Extracted text content of resume
+ * @returns {Promise<object>} - Validated AnalysisResponseSchema object
+ */
+async function queryAI(resumeText) {
+  const provider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+
+  const runQuery = async () => {
+    switch (provider) {
+      case 'gemini':
+        return await queryGemini(resumeText);
+      case 'openai':
+        return await queryOpenAI(resumeText);
+      case 'claude':
+        return await queryClaude(resumeText);
+      case 'openrouter':
+        return await queryOpenRouter(resumeText);
+      case 'grok':
+        return await queryGrok(resumeText);
+      case 'ml':
+        return await queryML(resumeText);
+      default:
+        throw new Error(
+          `Unsupported AI provider: "${provider}". Please configure AI_PROVIDER to gemini, openai, claude, openrouter, or grok.`
+        );
+    }
+  };
+
+  try {
+    return await runQuery();
+  } catch (firstErr) {
+    // If it failed because of malformed JSON, retry once with strict instruction
+    if (firstErr.message && firstErr.message.includes('JSON')) {
+      logger.warn({ msg: 'AI response was malformed JSON. Retrying once...' });
+      try {
+        return await runQuery();
+      } catch (retryErr) {
+        logger.error({ msg: 'Retry after malformed JSON failed', error: retryErr.message });
+        const fallbackErr = new Error(
+          'The AI model returned an unparseable response after retry. Please try again.'
+        );
+        fallbackErr.code = 'MALFORMED_AI_RESPONSE';
+        fallbackErr.status = 502;
+        throw fallbackErr;
+      }
+    }
+
+    throw firstErr;
+  }
 }
 
 module.exports = {
-  queryAI
+  SYSTEM_PROMPT,
+  extractAndValidateJSON,
+  queryAI,
 };

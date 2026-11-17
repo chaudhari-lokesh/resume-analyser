@@ -1,19 +1,53 @@
 services:
+  # Backend Web Service
   - type: web
-    name: resume-analyser
+    name: resumind-api
     runtime: node
-    buildCommand: npm run build:all
-    startCommand: cd backend && npm start
+    plan: starter
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: PORT
         value: 5000
       - key: AI_PROVIDER
         value: gemini
       - key: GEMINI_MODEL
-        value: gemini-3.5-flash
+        value: gemini-2.5-flash
       - key: GEMINI_API_KEY
         sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-3-5-sonnet-20240620
+      - key: CLAUDE_API_KEY
+        sync: false
       - key: GROK_MODEL
-        value: grok-2
+        value: grok-4.5
       - key: GROK_API_KEY
         sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://resumind-web.onrender.com
+      - key: AI_REQUEST_TIMEOUT_MS
+        value: 45000
+
+  # Frontend Static Site
+  - type: static
+    name: resumind-web
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://resumind-api.onrender.com

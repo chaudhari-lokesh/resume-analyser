@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
+import ErrorBoundary from './components/ErrorBoundary';
 import Hero from './components/Hero';
 import UploadBox from './components/UploadBox';
-import LoadingScreen from './components/LoadingScreen';
+import LoadingSkeleton from './components/LoadingSkeleton';
 import ResultsDashboard from './components/ResultsDashboard';
 import ThemeToggle from './components/ThemeToggle';
-import { Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, FileText } from 'lucide-react';
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export default function App() {
-  const [view, setView] = useState('landing');
+  const [view, setView] = useState('landing'); // 'landing' | 'loading' | 'results'
   const [file, setFile] = useState(null);
   const [analysisData, setAnalysisData] = useState(null);
-  const [error, setError] = useState('');
+  const [errorTitle, setErrorTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [errorDetails, setErrorDetails] = useState('');
 
   /**
@@ -22,7 +24,8 @@ export default function App() {
   const handleStartAnalysis = async (selectedFile) => {
     setFile(selectedFile);
     setView('loading');
-    setError('');
+    setErrorTitle('');
+    setErrorMessage('');
     setErrorDetails('');
 
     const formData = new FormData();
@@ -34,24 +37,57 @@ export default function App() {
         body: formData,
       });
 
-      const data = await response.json();
+      let data = {};
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        if (response.status === 502) {
+          throw new Error('Backend server is offline or restarting. Please verify the API server is running.');
+        }
+        throw new Error('Server returned an unparseable response.');
+      }
 
       if (!response.ok) {
-        const customError = new Error(data.error || 'Failed to analyze resume.');
-        customError.details = data.details;
-        throw customError;
+        const err = new Error(data.error || 'Failed to analyze resume.');
+        err.status = response.status;
+        err.code = data.code;
+        err.details = data.details;
+        throw err;
       }
 
       setAnalysisData(data);
       setView('results');
     } catch (err) {
       console.error('Analysis error:', err);
-      setError(err.message || 'Could not connect to the server.');
-      setErrorDetails(
-        err.details || (err.message.includes('API key') 
-          ? 'Make sure the server environment variables have the active AI provider key configured.'
-          : 'Please make sure the server is running and try again.')
-      );
+
+      let title = 'Analysis Failed';
+      let message = err.message || 'Could not connect to the analysis service.';
+      let details = err.details || '';
+
+      if (err.status === 429 || err.code === 'RATE_LIMIT_EXCEEDED') {
+        title = 'Rate Limit Reached';
+        message = 'You have submitted too many requests recently. Please wait a few minutes before trying again.';
+      } else if (err.status === 413) {
+        title = 'File Too Large';
+        message = 'The uploaded file exceeds the 5 MB maximum size limit. Please upload a smaller document.';
+      } else if (err.status === 415) {
+        title = 'Unsupported File Type';
+        message = 'Only valid PDF and Microsoft Word (.docx) files are supported.';
+      } else if (err.message?.includes('scanned') || err.message?.includes('empty')) {
+        title = 'Document Unreadable';
+        message = 'The document appears to be empty or contains scanned images without selectable text. Please upload a text-based resume.';
+      } else if (err.message?.includes('timeout') || err.status === 504) {
+        title = 'Analysis Request Timed Out';
+        message = 'The AI provider took too long to complete the evaluation. Please try again.';
+      } else if (err.message?.includes('API_KEY') || err.message?.includes('API key')) {
+        title = 'Provider Configuration Notice';
+        message = 'The backend AI provider key is not configured or is invalid. Please check your environment variables.';
+      }
+
+      setErrorTitle(title);
+      setErrorMessage(message);
+      setErrorDetails(details);
       setView('landing');
     }
   };
@@ -62,78 +98,105 @@ export default function App() {
   const handleReset = () => {
     setFile(null);
     setAnalysisData(null);
-    setError('');
+    setErrorTitle('');
+    setErrorMessage('');
     setErrorDetails('');
     setView('landing');
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="sticky top-0 z-50 glass-panel border-slate-200/40 dark:border-slate-800/40 border-b py-4 px-6 md:px-12 flex items-center justify-between no-print">
-        <div className="flex items-center gap-2.5 hover:opacity-90 transition-opacity cursor-pointer" onClick={handleReset}>
-          <div className="h-9 w-9 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-indigo-500/10">
-            <Sparkles className="h-5 w-5 fill-white/10" />
-          </div>
-          <span className="text-xl font-extrabold tracking-tight font-outfit text-slate-800 dark:text-white">
-            ResuMind<span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400"> AI</span>
-          </span>
-        </div>
+    <ErrorBoundary>
+      <div className="flex flex-col min-h-screen bg-surface-bg text-text-primary">
+        {/* Minimal Navigation Bar */}
+        <header className="sticky top-0 z-40 bg-surface-card/90 backdrop-blur-xs border-b border-surface-border py-3 px-6 md:px-12 flex items-center justify-between no-print transition-colors">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer focus-visible:outline-2 focus-visible:outline-accent rounded-md p-1 -m-1"
+            aria-label="ResuMind AI Home"
+          >
+            <div className="h-7 w-7 bg-accent text-white rounded-md flex items-center justify-center font-bold text-xs tracking-tight shadow-xs">
+              <FileText className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <span className="text-base font-bold tracking-tight text-text-primary">
+              ResuMind <span className="text-accent font-semibold">AI</span>
+            </span>
+          </button>
 
-        <div className="flex items-center gap-4">
-          <ThemeToggle />
-        </div>
-      </header>
+          <nav aria-label="Global application controls" className="flex items-center gap-3">
+            <ThemeToggle />
+          </nav>
+        </header>
 
-      <main className="flex-grow flex flex-col justify-center py-6">
-        {error && view === 'landing' && (
-          <div className="max-w-2xl mx-auto w-full px-4 mb-6 animate-fade-in no-print">
-            <div className="p-5 rounded-3xl bg-rose-500/10 border border-rose-500/20 text-rose-800 dark:text-rose-350 shadow-md">
-              <div className="flex gap-3 items-start">
-                <AlertCircle className="h-5 w-5 text-rose-500 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-bold text-sm leading-tight font-outfit">Analysis Failed</p>
-                  <p className="text-xs leading-normal font-medium">{error}</p>
-                  {errorDetails && (
-                    <p className="text-xs opacity-75 font-normal mt-2 leading-relaxed pt-1.5 border-t border-rose-500/10">
-                      {errorDetails}
+        {/* Main Content Area */}
+        <main className="flex-grow flex flex-col justify-center py-6">
+          {/* Friendly Error Banner */}
+          {errorMessage && view === 'landing' && (
+            <div
+              role="alert"
+              className="max-w-2xl mx-auto w-full px-4 mb-6 animate-fade-in no-print"
+            >
+              <div className="p-4 rounded-xl bg-status-error-subtle border border-surface-border text-text-primary shadow-xs">
+                <div className="flex gap-3 items-start">
+                  <AlertCircle className="h-5 w-5 text-status-error shrink-0 mt-0.5" aria-hidden="true" />
+                  <div className="space-y-1 flex-1">
+                    <p className="font-semibold text-sm text-status-error leading-tight">
+                      {errorTitle || 'Analysis Failed'}
                     </p>
-                  )}
+                    <p className="text-xs text-text-secondary leading-normal">
+                      {errorMessage}
+                    </p>
+                    {errorDetails && (
+                      <p className="text-xs text-text-tertiary mt-2 pt-2 border-t border-surface-border font-mono">
+                        {errorDetails}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-1.5 py-1 px-3 rounded-md bg-surface-card border border-surface-border text-xs font-medium text-text-primary hover:bg-surface-card-subtle transition-subtle cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+                  >
+                    <RefreshCw className="h-3 w-3 text-text-secondary" aria-hidden="true" />
+                    <span>Dismiss</span>
+                  </button>
                 </div>
               </div>
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/20 text-xs font-bold text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  <span>Dismiss & Retry</span>
-                </button>
-              </div>
             </div>
+          )}
+
+          {view === 'landing' && (
+            <>
+              <Hero />
+              <UploadBox onStartAnalysis={handleStartAnalysis} />
+            </>
+          )}
+
+          {view === 'loading' && <LoadingSkeleton />}
+
+          {view === 'results' && (
+            <ResultsDashboard
+              data={analysisData}
+              fileName={file?.name || 'Resume.pdf'}
+              onReset={handleReset}
+            />
+          )}
+        </main>
+
+        {/* Minimal Footer */}
+        <footer className="py-6 border-t border-surface-border text-center text-xs text-text-tertiary no-print">
+          <div className="max-w-4xl mx-auto px-4 space-y-1">
+            <p className="font-medium text-text-secondary">
+              ResuMind AI &bull; Production ATS Resume Evaluation
+            </p>
+            <p>
+              Memory-only processing. Resumes are parsed transiently and never persisted to disk or database.
+            </p>
           </div>
-        )}
-
-        {view === 'landing' && (
-          <>
-            <Hero />
-            <UploadBox onStartAnalysis={handleStartAnalysis} />
-          </>
-        )}
-
-        {view === 'loading' && <LoadingScreen />}
-
-        {view === 'results' && (
-          <ResultsDashboard 
-            data={analysisData} 
-            fileName={file?.name || 'Resume.pdf'} 
-            onReset={handleReset} 
-          />
-        )}
-      </main>
-
-      <footer className="py-6 border-t border-slate-200/20 dark:border-slate-800/25 text-center text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider no-print">
-        <p>© 2026 ResuMind AI. All processing is memory-based. No files are stored.</p>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </ErrorBoundary>
   );
 }
