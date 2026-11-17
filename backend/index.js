@@ -15,6 +15,7 @@ const { queryAI } = require('./ai');
 const {
   detectFileTypeFromMagicBytes,
   getCorsOrigins,
+  isOriginAllowed,
   generalLimiter,
   analyzeLimiter,
 } = require('./security');
@@ -35,10 +36,11 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         imgSrc: ["'self'", 'data:', 'blob:'],
-        connectSrc: ["'self'", ...getCorsOrigins()],
+        connectSrc: ["'self'", 'https://*.onrender.com', ...getCorsOrigins()],
       },
     },
     crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: false,
   })
 );
 
@@ -52,18 +54,31 @@ app.use((req, res, next) => {
   next();
 });
 
-// Strict CORS configuration
+// Serve frontend static assets before strict CORS and API limiters
+const distPath = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(distPath)) {
+  app.use(
+    express.static(distPath, {
+      maxAge: '1d',
+      setHeaders: (res, filePath) => {
+        // Cache hashed Vite build assets immutably
+        if (filePath.includes(path.sep + 'assets' + path.sep) || filePath.includes('/assets/')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    })
+  );
+}
+
+// Robust CORS configuration
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow non-browser requests (e.g. server-to-server, curl, tests)
-    if (!origin) return callback(null, true);
-
-    const allowed = getCorsOrigins();
-    if (allowed.includes('*') || allowed.includes(origin)) {
+    // If origin is allowed, pass true; if not, pass false (never pass an Error to avoid 500)
+    if (isOriginAllowed(origin, null)) {
       callback(null, true);
     } else {
-      logger.warn({ msg: 'CORS blocked request', origin });
-      callback(new Error('Not allowed by CORS policy.'));
+      logger.warn({ msg: 'CORS disallowed request', origin });
+      callback(null, false);
     }
   },
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -77,7 +92,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-// Apply general rate limiter across all incoming traffic
+// Apply general rate limiter across incoming traffic
 app.use(generalLimiter);
 
 // Configure Multer for memory-only storage (5MB maximum)
@@ -106,22 +121,6 @@ const upload = multer({
     }
   },
 });
-
-// Serve frontend static assets if built
-const distPath = path.join(__dirname, '../frontend/dist');
-if (fs.existsSync(distPath)) {
-  app.use(
-    express.static(distPath, {
-      maxAge: '1d',
-      setHeaders: (res, filePath) => {
-        // Assets with hash can be cached longer
-        if (filePath.includes(path.sep + 'assets' + path.sep)) {
-          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-        }
-      },
-    })
-  );
-}
 
 /**
  * GET /health

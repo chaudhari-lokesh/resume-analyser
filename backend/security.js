@@ -37,12 +37,10 @@ function detectFileTypeFromMagicBytes(buffer) {
 
 /**
  * Parses allowed CORS origins from environment variable.
- * Accepts comma-separated list, e.g. "https://resumind.onrender.com,http://localhost:5173"
  */
 function getCorsOrigins() {
   const allowed = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN;
   if (!allowed) {
-    // In dev / default, allow same-origin and common localhost ports
     return [
       'http://localhost:5173',
       'http://localhost:3000',
@@ -56,6 +54,45 @@ function getCorsOrigins() {
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+}
+
+/**
+ * Robust CORS origin checker:
+ * - Always allows requests without Origin (same-origin, curl, server-to-server)
+ * - Always allows same-origin requests where origin host matches current host
+ * - Auto-allows all Render deployment domains (*.onrender.com) and localhost
+ * - Respects explicit ALLOWED_ORIGINS allowlist
+ */
+function isOriginAllowed(origin, req) {
+  if (!origin) return true;
+
+  try {
+    const originUrl = new URL(origin);
+    const currentHost = (req && req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
+
+    // Same-origin check
+    if (currentHost && (originUrl.host === currentHost || currentHost.startsWith(originUrl.host))) {
+      return true;
+    }
+
+    // Auto-allow all Render deployment subdomains and localhost
+    if (
+      originUrl.hostname.endsWith('.onrender.com') ||
+      originUrl.hostname === 'localhost' ||
+      originUrl.hostname === '127.0.0.1'
+    ) {
+      return true;
+    }
+  } catch {
+    // If origin URL fails to parse, check explicit string list
+  }
+
+  const allowed = getCorsOrigins();
+  if (allowed.includes('*') || allowed.includes(origin)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -89,6 +126,7 @@ const analyzeLimiter = rateLimit({
 module.exports = {
   detectFileTypeFromMagicBytes,
   getCorsOrigins,
+  isOriginAllowed,
   generalLimiter,
   analyzeLimiter,
 };

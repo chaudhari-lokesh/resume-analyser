@@ -1,25 +1,22 @@
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
-const { detectFileTypeFromMagicBytes } = require('../security');
+const { detectFileTypeFromMagicBytes, isOriginAllowed } = require('../security');
 const { parseResume } = require('../parser');
 
 describe('Security & File Validation Tests', () => {
   it('detects a valid PDF from magic bytes %PDF-', () => {
-    // 0x25 0x50 0x44 0x46 = %PDF
     const pdfBuffer = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]);
     const detected = detectFileTypeFromMagicBytes(pdfBuffer);
     assert.strictEqual(detected, 'pdf');
   });
 
   it('detects a valid DOCX from ZIP container magic bytes PK\\x03\\x04', () => {
-    // 0x50 0x4B 0x03 0x04 = PK\x03\x04
     const docxBuffer = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00]);
     const detected = detectFileTypeFromMagicBytes(docxBuffer);
     assert.strictEqual(detected, 'docx');
   });
 
   it('rejects an executable or script disguised with .pdf extension', () => {
-    // Shell script starting with '#!/bin/bash'
     const fakePdfBuffer = Buffer.from('#!/bin/bash\necho "Malicious code"');
     const detected = detectFileTypeFromMagicBytes(fakePdfBuffer);
     assert.strictEqual(detected, null);
@@ -44,5 +41,20 @@ describe('Security & File Validation Tests', () => {
         return true;
       }
     );
+  });
+
+  it('isOriginAllowed allows empty origin (direct navigation, server-to-server)', () => {
+    assert.strictEqual(isOriginAllowed('', null), true);
+    assert.strictEqual(isOriginAllowed(null, null), true);
+  });
+
+  it('isOriginAllowed allows Render subdomains and localhost', () => {
+    assert.strictEqual(isOriginAllowed('https://resume-analyser-ftvk.onrender.com', null), true);
+    assert.strictEqual(isOriginAllowed('http://localhost:5173', null), true);
+  });
+
+  it('isOriginAllowed allows same-origin requests matching Host header', () => {
+    const fakeReq = { headers: { host: 'custom-resume.com' } };
+    assert.strictEqual(isOriginAllowed('https://custom-resume.com', fakeReq), true);
   });
 });
